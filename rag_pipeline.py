@@ -16,14 +16,20 @@ if not os.getenv("GROQ_API_KEY"):
 # =============================
 # LLM (Groq)
 # =============================
-from langchain_groq import ChatGroq
+from groq import Groq
+import os
 
-llm = ChatGroq(
-    api_key=os.getenv("GROQ_API_KEY"),
-    model="llama-3.1-8b-instant",
-    temperature=0.2,
-    max_tokens=1024
-)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+def llm(prompt: str) -> str:
+    resp = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+        max_tokens=1024,
+    )
+    return resp.choices[0].message.content
+
 
 print("LLM INITIALIZED")
 
