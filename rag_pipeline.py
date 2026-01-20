@@ -6,6 +6,7 @@ import uuid
 import requests
 import numpy as np
 import chromadb
+import tempfile
 
 from typing import List, Any
 
@@ -64,15 +65,15 @@ class EmbeddingManager:
 
 # ============================
 # Vector Store (YOUR implementation)
-# ============================
 class VectorStore:
     def __init__(
         self,
         collection_name: str = "pdf_documents",
-        persist_directory: str = "data/vector_store",
     ):
         self.collection_name = collection_name
-        self.persist_directory = persist_directory
+        self.persist_directory = os.path.join(
+            tempfile.gettempdir(), "vector_store"
+        )
         self.client = None
         self.collection = None
         self._initialize_store()
@@ -117,6 +118,62 @@ class VectorStore:
 DATA_DIR = "data"
 
 def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
+    documents: List[Document] = []
+
+    # ---- Load PDFs ----
+    if os.path.exists(DATA_DIR):
+        for file in os.listdir(DATA_DIR):
+            if file.lower().endswith(".pdf"):
+                loader = PyMuPDFLoader(os.path.join(DATA_DIR, file))
+                loaded = loader.load()
+                print(f"Loaded {len(loaded)} pages from {file}")
+                documents.extend(loaded)
+
+    # ---- Manual document (GUARANTEED non-empty) ----
+    manual_doc = Document(
+        page_content=(
+            "Author: Animesh\n"
+            "Source: example.txt\n"
+            "Date: 2026-01-16\n\n"
+            "This document describes the main page content "
+            "used to create a Retrieval-Augmented Generation system."
+        ),
+        metadata={
+            "source": "example.txt",
+            "page": 1,
+            "author": "Animesh",
+        },
+    )
+
+    documents.append(manual_doc)
+
+    # ---- HARD CHECK 1 ----
+    if not documents:
+        raise RuntimeError("No documents loaded at ingestion stage")
+
+    # ---- Split ----
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=100,
+    )
+    chunks = splitter.split_documents(documents)
+
+    # ---- HARD CHECK 2 (THIS PREVENTS YOUR ERROR) ----
+    if not chunks:
+        raise RuntimeError("Text splitter produced ZERO chunks")
+
+    print(f"Total chunks created: {len(chunks)}")
+
+    # ---- Embed ----
+    embeddings = embedder.embed_documents(chunks)
+
+    # ---- HARD CHECK 3 ----
+    if embeddings is None or len(embeddings) == 0:
+        raise RuntimeError("Embedding generation returned EMPTY output")
+
+    # ---- Store ----
+    vector_store.add_documents(chunks, embeddings)
+
     documents: List[Document] = []
 
     # ---- 1️⃣ Load PDFs ----
@@ -190,6 +247,8 @@ class RAGRetriever:
 # ============================
 embedding_manager = EmbeddingManager()
 vector_store = VectorStore()
+print("VECTOR STORE COUNT:", vector_store.collection.count())
+
 
 if vector_store.collection.count() == 0:
     ingest_documents(vector_store, embedding_manager)
@@ -205,7 +264,16 @@ def rag_advanced(query: str) -> str:
     if not results:
         return "I couldn't find this information in the provided documents."
 
-    context = "\n\n".join(r["content"] for r in results)
+    context = "\n\n".join(
+        f"""
+Source: {r.get('source')}
+Page: {r.get('page')}
+Content:
+{r['content']}
+"""
+        for r in results
+    )
+
 
     prompt = f"""
 Answer the question using ONLY the context below.
