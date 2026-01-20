@@ -72,3 +72,10 @@ print("EMBEDDINGS READY")
 # =============================
 # DO NOT add VectorStore / RAG yet
 # First confirm this file runs cleanly
+def rag_advanced(query: str) -> str:
+    """
+    Temporary RAG wrapper.
+    Replace retrieval logic later.
+    """
+    return llm(query)
+rag_retriever = None  # placeholder
