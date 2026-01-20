@@ -16,19 +16,36 @@ if not os.getenv("GROQ_API_KEY"):
 # =============================
 # LLM (Groq)
 # =============================
-from groq import Groq
-import os
+import requests
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Support Streamlit Cloud secrets + local env
+try:
+    import streamlit as st
+    GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
+except Exception:
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY not found")
+
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 def llm(prompt: str) -> str:
-    resp = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
-        max_tokens=1024,
-    )
-    return resp.choices[0].message.content
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
+        "max_tokens": 1024,
+    }
+
+    response = requests.post(GROQ_API_URL, headers=headers, json=payload)
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
 
 
 print("LLM INITIALIZED")
