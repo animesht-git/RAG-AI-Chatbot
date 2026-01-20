@@ -3,3 +3,17 @@ langchain-core
 langchain-community
 pypdf
 pymupdf
+sentence-transformers
+faiss-cpu
+chromadb
+python-dotenv
+openai
+langchain-groq
+streamlit
+sentence-transformers
+chromadb
+langchain-groq>=0.0.3
+langchain
+pymupdf
+python-dotenv
+scikit-learn
