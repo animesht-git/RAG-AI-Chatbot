@@ -1,13 +1,22 @@
+# ============================
+# Imports
+# ============================
 import os
+import uuid
 import requests
+import numpy as np
+import chromadb
+
+from typing import List, Any
+
+from langchain_core.documents import Document
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# --------------------
-# LLM (Groq via HTTP)
-# --------------------
+# ============================
+# Load GROQ API Key (Streamlit + local)
+# ============================
 try:
     import streamlit as st
     GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
@@ -17,85 +26,184 @@ except Exception:
 if not GROQ_API_KEY:
     raise RuntimeError("GROQ_API_KEY not found")
 
+# ============================
+# LLM (Groq via HTTP)
+# ============================
 def llm(prompt: str) -> str:
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={
             "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         },
         json={
             "model": "llama-3.1-8b-instant",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.2,
-            "max_tokens": 1024
-        }
+            "max_tokens": 1024,
+        },
     )
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
-# --------------------
-# Embeddings
-# --------------------
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+# ============================
+# Embedding Manager
+# ============================
+class EmbeddingManager:
+    def __init__(self):
+        self.model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
 
-# --------------------
-# Vector store builder
-# --------------------
+    def embed_documents(self, docs: List[Document]) -> np.ndarray:
+        texts = [doc.page_content for doc in docs]
+        return np.array(self.model.embed_documents(texts))
+
+    def embed_query(self, query: str) -> np.ndarray:
+        return np.array(self.model.embed_query(query))
+
+# ============================
+# Vector Store (YOUR implementation)
+# ============================
+class VectorStore:
+    def __init__(
+        self,
+        collection_name: str = "pdf_documents",
+        persist_directory: str = "data/vector_store",
+    ):
+        self.collection_name = collection_name
+        self.persist_directory = persist_directory
+        self.client = None
+        self.collection = None
+        self._initialize_store()
+
+    def _initialize_store(self):
+        os.makedirs(self.persist_directory, exist_ok=True)
+        self.client = chromadb.PersistentClient(path=self.persist_directory)
+        self.collection = self.client.get_or_create_collection(
+            name=self.collection_name,
+            metadata={"description": "PDF + manual document embeddings for RAG"},
+        )
+        print(f"Vector store initialized: {self.collection.count()} documents")
+
+    def add_documents(self, documents: List[Document], embeddings: np.ndarray):
+        if not documents or len(embeddings) == 0:
+            raise ValueError("Cannot add empty documents or embeddings")
+
+        ids = []
+        texts = []
+        metadatas = []
+        embedding_list = []
+
+        for i, (doc, emb) in enumerate(zip(documents, embeddings)):
+            doc_id = f"doc_{uuid.uuid4().hex[:8]}_{i}"
+            ids.append(doc_id)
+            texts.append(doc.page_content)
+            metadatas.append(doc.metadata)
+            embedding_list.append(emb.tolist())
+
+        self.collection.add(
+            ids=ids,
+            documents=texts,
+            metadatas=metadatas,
+            embeddings=embedding_list,
+        )
+
+        print(f"Added {len(documents)} documents to vector store")
+
+# ============================
+# Data Ingestion
+# ============================
 DATA_DIR = "data"
-PERSIST_DIR = "chroma_db"
 
-def build_vector_store():
-    docs = []
+def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
+    documents: List[Document] = []
 
-    for file in os.listdir(DATA_DIR):
-        if file.lower().endswith(".pdf"):
-            loader = PyMuPDFLoader(os.path.join(DATA_DIR, file))
-            docs.extend(loader.load())
+    # ---- 1️⃣ Load PDFs ----
+    if os.path.exists(DATA_DIR):
+        for file in os.listdir(DATA_DIR):
+            if file.lower().endswith(".pdf"):
+                loader = PyMuPDFLoader(os.path.join(DATA_DIR, file))
+                documents.extend(loader.load())
 
+    # ---- 2️⃣ Manual Documents ----
+    manual_docs = [
+        Document(
+            page_content="main page content i will be using to create RAG",
+            metadata={
+                "source": "example.txt",
+                "page": 1,
+                "author": "Animesh",
+                "date_created": "2026-01-16",
+            },
+        )
+    ]
+    documents.extend(manual_docs)
+
+    if not documents:
+        raise RuntimeError("No documents found for ingestion")
+
+    # ---- 3️⃣ Chunking ----
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=800,
-        chunk_overlap=100
+        chunk_overlap=100,
     )
-    chunks = splitter.split_documents(docs)
+    chunks = splitter.split_documents(documents)
 
-    vectordb = Chroma.from_documents(
-        chunks,
-        embedding=embeddings,
-        persist_directory=PERSIST_DIR
-    )
-    vectordb.persist()
-    return vectordb
+    # ---- 4️⃣ Embeddings ----
+    embeddings = embedder.embed_documents(chunks)
 
-vectordb = build_vector_store()
+    # ---- 5️⃣ Store ----
+    vector_store.add_documents(chunks, embeddings)
 
-# --------------------
+# ============================
 # Retriever
-# --------------------
+# ============================
 class RAGRetriever:
-    def retrieve(self, query, top_k=3):
-        docs = vectordb.similarity_search(query, k=top_k)
-        return [
-            {
-                "content": d.page_content,
-                "source": d.metadata.get("source", "unknown"),
-                "page": d.metadata.get("page", "N/A")
-            }
-            for d in docs
-        ]
+    def __init__(self, vector_store: VectorStore, embedder: EmbeddingManager):
+        self.collection = vector_store.collection
+        self.embedder = embedder
 
-rag_retriever = RAGRetriever()
+    def retrieve(self, query: str, top_k: int = 3):
+        query_embedding = self.embedder.embed_query(query).tolist()
 
-# --------------------
-# RAG function (your rag_simple, fixed)
-# --------------------
-def rag_advanced(query, top_k=3):
-    results = rag_retriever.retrieve(query, top_k=top_k)
+        results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k,
+            include=["documents", "metadatas"],
+        )
+
+        retrieved = []
+        for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
+            retrieved.append(
+                {
+                    "content": doc,
+                    "source": meta.get("source", "unknown"),
+                    "page": meta.get("page", "N/A"),
+                }
+            )
+
+        return retrieved
+
+# ============================
+# Wire Everything (ONCE)
+# ============================
+embedding_manager = EmbeddingManager()
+vector_store = VectorStore()
+
+if vector_store.collection.count() == 0:
+    ingest_documents(vector_store, embedding_manager)
+
+rag_retriever = RAGRetriever(vector_store, embedding_manager)
+
+# ============================
+# RAG Function (USED BY APP)
+# ============================
+def rag_advanced(query: str) -> str:
+    results = rag_retriever.retrieve(query)
 
     if not results:
-        return "I couldn't find this information in the uploaded documents."
+        return "I couldn't find this information in the provided documents."
 
     context = "\n\n".join(r["content"] for r in results)
 
@@ -111,5 +219,4 @@ Question:
 
 Answer:
 """
-
     return llm(prompt)
