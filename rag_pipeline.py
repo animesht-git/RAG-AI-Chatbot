@@ -1,17 +1,23 @@
-# rag_pipeline.py
-
+# =============================
+# Environment setup
+# =============================
 import os
+from pathlib import Path
 from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = BASE_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_PATH)
+
+if not os.getenv("GROQ_API_KEY"):
+    raise RuntimeError("GROQ_API_KEY not found in environment")
+
+# =============================
+# LLM (Groq)
+# =============================
 from langchain_groq import ChatGroq
 
-# =============================
-# Load environment variables
-# =============================
-load_dotenv()
-
-# =============================
-# LLM
-# =============================
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
     model="llama-3.1-8b-instant",
@@ -19,19 +25,27 @@ llm = ChatGroq(
     max_tokens=1024
 )
 
-# =============================
-# IMPORT your existing classes
-# (paste them here EXACTLY as is)
-# =============================
-# EmbeddingManager
-# VectorStore
-# RAGRetriever
-# rag_advanced
-# rag_simple
+print("LLM INITIALIZED")
 
 # =============================
-# Initialize objects
+# Embeddings
 # =============================
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+class EmbeddingManager:
+    def __init__(self):
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+    def get(self):
+        return self.embeddings
+
 embedding_manager = EmbeddingManager()
-vector_store = VectorStore()
-rag_retriever = RAGRetriever(vector_store, embedding_manager)
+print("EMBEDDINGS READY")
+
+# =============================
+# TEMP STOP HERE
+# =============================
+# DO NOT add VectorStore / RAG yet
+# First confirm this file runs cleanly
