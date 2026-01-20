@@ -1,6 +1,4 @@
-import subprocess
-import sys
-subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit"])
+
 import streamlit as st
 
 # Import your existing RAG components
