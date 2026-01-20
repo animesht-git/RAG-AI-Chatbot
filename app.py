@@ -1,38 +1,52 @@
-
 import streamlit as st
+from rag_pipeline import rag_advanced
 
-# Import your existing RAG components
-# These should already be initialized exactly as in your notebook
-from rag_pipeline import rag_advanced, rag_retriever, llm
-
-
-# -------------------------------
-# Page Configuration
-# -------------------------------
 st.set_page_config(
-    page_title="RAG PDF Assistant",
-    page_icon="📄",
-    layout="wide"
+    page_title="RAG AI Chatbot",
+    page_icon="🚀",
+    layout="centered"
 )
 
-# -------------------------------
-# Custom CSS (Professional look)
-# -------------------------------
-st.markdown("""
-<style>
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+# --- CSS to center content ---
+st.markdown(
+    """
+    <style>
+    .center-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 70vh;
     }
-    .chat-title {
-        font-size: 2rem;
-        font-weight: 700;
+    .search-box {
+        width: 100%;
+        max-width: 600px;
     }
-    .confidence-badge {
-        display: inline-block;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        background-color: #eef2ff;
-    }
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Centered layout ---
+st.markdown('<div class="center-container">', unsafe_allow_html=True)
+
+st.markdown("🧠 UST AI Assistant")
+st.markdown("Ask anything and get an AI-powered answer")
+
+query = st.text_input(
+    "",
+    placeholder="Type your question here...",
+    key="search",
+    label_visibility="collapsed"
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Answer section ---
+if query:
+    with st.spinner("Thinking..."):
+        answer = rag_advanced(query)
+
+    st.markdown("---")
+    st.markdown("### 📄 Answer")
+    st.write(answer)
