@@ -113,8 +113,10 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
 
     # ---- Load PDFs + Word files ----
     if os.path.exists(DATA_DIR):
-        for file in os.listdir(DATA_DIR):
-            file_path = os.path.join(DATA_DIR, file)
+     for root, _, files in os.walk(DATA_DIR):
+        for file in files:
+            file_path = os.path.join(root, file)
+
 
             if file.lower().endswith(".pdf"):
                 loader = PyMuPDFLoader(file_path)
@@ -223,8 +225,8 @@ vector_store = get_vector_store()
 print("VECTOR STORE COUNT:", vector_store.collection.count())
 
 
-if vector_store.collection.count() == 0:
-    ingest_documents(vector_store, embedding_manager)
+ingest_documents(vector_store, embedding_manager)
+
 
 rag_retriever = RAGRetriever(vector_store, embedding_manager)
 
