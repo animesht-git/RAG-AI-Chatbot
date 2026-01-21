@@ -243,8 +243,12 @@ def rag_advanced(query: str) -> str:
     context = "\n\n".join(r["content"] for r in results)
 
     prompt = f"""
-Answer the question using ONLY the context below.
-If the answer is not in the context, say you don't know.
+You are answering questions using retrieved document excerpts.
+
+If the question asks generally about a document (e.g. "what is mentioned"),
+summarize the relevant information found in the context.
+
+Do NOT hallucinate. Use only the context.
 
 Context:
 {context}
@@ -254,4 +258,5 @@ Question:
 
 Answer:
 """
+
     return llm(prompt)
