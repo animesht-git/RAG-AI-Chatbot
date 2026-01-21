@@ -3,50 +3,45 @@ from rag_pipeline import rag_advanced
 
 st.set_page_config(
     page_title="RAG AI Chatbot",
-    page_icon="🚀",
-    layout="centered"
+    layout="wide"
 )
 
-# --- CSS to center content ---
-st.markdown(
-    """
-    <style>
-    .center-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 70vh;
-    }
-    .search-box {
-        width: 100%;
-        max-width: 600px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# ---------- SMALL TOP GAP ----------
+st.markdown("<br>", unsafe_allow_html=True)
 
-# --- Centered layout ---
-st.markdown('<div class="center-container">', unsafe_allow_html=True)
+# ---------- CENTER IMAGE (BUILDING) ----------
+col_left, col_center, col_right = st.columns([3, 4, 3])
 
-st.markdown("🧠 UST AI Assistant")
-st.markdown("Ask anything and get an AI-powered answer")
+with col_center:
+    st.image(
+        "static/ust building.png",
+        use_container_width=True
+    )
 
-query = st.text_input(
-    "",
-    placeholder="Type your question here...",
-    key="search",
-    label_visibility="collapsed"
-)
+# ---------- VERY SMALL GAP ----------
+st.markdown("<br>", unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+# ---------- SEARCH BAR ----------
+q_left, q_center, q_right = st.columns([3, 6, 3])
 
-# --- Answer section ---
+with q_center:
+    query = st.text_input(
+        "",
+        placeholder="Ask anything from your documents (Training Calendar, Manuals, PDFs...)",
+        label_visibility="collapsed"
+    )
+
+# ---------- ANSWER ----------
 if query:
-    with st.spinner("Thinking..."):
+    with st.spinner("Searching documents..."):
         answer = rag_advanced(query)
+        st.markdown("### Answer")
+        st.write(answer)
 
-    st.markdown("---")
-    st.markdown("### 📄 Answer")
-    st.write(answer)
+# ---------- BOTTOM BACKGROUND IMAGE ----------
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+st.image(
+    "static/background.jpg",
+    use_container_width=True
+)
