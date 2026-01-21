@@ -4,7 +4,7 @@ from rag_pipeline import rag_advanced
 st.set_page_config(
     page_title="RAG AI Chatbot",
     page_icon="🚀",
-    layout="centered"
+    layout="wide"
 )
 
 # --- CSS ---
@@ -51,10 +51,10 @@ st.markdown(
 st.markdown('<div class="center-container">', unsafe_allow_html=True)
 
 # 🔹 BIG CENTER IMAGE (BUILDING)
-st.image(
-    "static/ust building.png",
-    width=2000   
-)
+st.markdown('<div class="hero-img">', unsafe_allow_html=True)
+st.image("static/ust building.png", width="stretch")
+st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # 🔹 TITLE TEXT 
@@ -84,7 +84,7 @@ if query:
 st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
 st.image(
     "static/background.png",
-    width=3000
+    width="stretch"
 )
 
 
