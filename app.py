@@ -16,7 +16,7 @@ st.markdown(
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        margin-top: 5px;
+        margin-top: 2px;
     }
 
     .title {
@@ -33,11 +33,11 @@ st.markdown(
 
     .search-box {
         width: 100%;
-        max-width: 600px;
+        max-width: 800px;
     }
 
     .bottom-bg {
-    margin-top: 40px;
+    margin-top: 10px;
     height: 70vh;     
     overflow: hidden;
 }
@@ -53,7 +53,7 @@ st.markdown('<div class="center-container">', unsafe_allow_html=True)
 # 🔹 BIG CENTER IMAGE (BUILDING)
 st.image(
     "static/ust building.png",
-    width=1200   
+    width=2000   
 )
 
 
@@ -84,7 +84,7 @@ if query:
 st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
 st.image(
     "static/background.png",
-    width=1000
+    width=3000
 )
 
 
