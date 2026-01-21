@@ -16,7 +16,7 @@ st.markdown(
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        margin-top: 40px;
+        margin-top: 15px;
     }
 
     .title {
@@ -37,8 +37,11 @@ st.markdown(
     }
 
     .bottom-bg {
-        margin-top: 80px;
-    }
+    margin-top: 40px;
+    height: 70vh;     
+    overflow: hidden;
+}
+
     </style>
     """,
     unsafe_allow_html=True
@@ -50,14 +53,15 @@ st.markdown('<div class="center-container">', unsafe_allow_html=True)
 # 🔹 BIG CENTER IMAGE (BUILDING)
 st.image(
     "static/ust building.png",
-    use_container_width=True
+    width=520   
 )
 
-# 🔹 TITLE TEXT (UNCHANGED)
+
+# 🔹 TITLE TEXT 
 st.markdown('<div class="title">🧠 UST AI Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Ask anything and get an AI-powered answer</div>', unsafe_allow_html=True)
 
-# 🔹 SEARCH BAR (MOVED HIGHER)
+# 🔹 SEARCH BAR 
 query = st.text_input(
     "",
     placeholder="Hey! How may I assist you today?",
@@ -67,7 +71,7 @@ query = st.text_input(
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- ANSWER SECTION ---
+# --- ANSWER  ---
 if query:
     with st.spinner("Cooking..."):
         answer = rag_advanced(query)
@@ -76,10 +80,12 @@ if query:
     st.markdown("### 📄 Answer")
     st.write(answer)
 
-# --- BOTTOM BACKGROUND IMAGE (2/3 PAGE FEEL) ---
+# --- BOTTOM BACKGROUND IMAGE---
 st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
 st.image(
     "static/background.png",
-    use_container_width=True
+    width="stretch"
 )
+
+
 st.markdown('</div>', unsafe_allow_html=True)
