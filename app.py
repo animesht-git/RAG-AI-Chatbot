@@ -16,7 +16,7 @@ st.markdown(
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        margin-top: 15px;
+        margin-top: 5px;
     }
 
     .title {
@@ -53,7 +53,7 @@ st.markdown('<div class="center-container">', unsafe_allow_html=True)
 # 🔹 BIG CENTER IMAGE (BUILDING)
 st.image(
     "static/ust building.png",
-    width=900   
+    width=1200   
 )
 
 
@@ -84,7 +84,7 @@ if query:
 st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
 st.image(
     "static/background.png",
-    width="1000"
+    width=1000
 )
 
 
