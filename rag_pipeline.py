@@ -234,25 +234,25 @@ rag_retriever = RAGRetriever(vector_store, embedding_manager)
 
 
 def rag_advanced(query: str) -> str:
-    results = rag_retriever.retrieve(query)
+    results = rag_retriever.retrieve(query, top_k=5)
+
+    print("QUERY:", query)
+    print("RETRIEVED COUNT:", len(results))
+
+    for i, r in enumerate(results):
+        print(f"\n--- RESULT {i+1} ---")
+        print("SOURCE:", r.get("source"))
+        print("PAGE:", r.get("page"))
+        print("CONTENT PREVIEW:", r["content"][:300])
 
     if not results:
-        return "I couldn't find this information in the provided documents."
+        return "RETRIEVAL RETURNED ZERO CHUNKS — VECTOR SEARCH FAILED"
 
-    context = "\n\n".join(
-        f"""
-Source: {r.get('source')}
-Page: {r.get('page')}
-Content:
-{r['content']}
-"""
-        for r in results
-    )
-
+    context = "\n\n".join(r["content"] for r in results)
 
     prompt = f"""
-Answer the question using ONLY the context below.
-If the answer is not in the context, say you don't know.
+Answer using ONLY the context below.
+If not found, say you don't know.
 
 Context:
 {context}
