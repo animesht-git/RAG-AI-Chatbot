@@ -51,28 +51,23 @@ st.markdown(
 st.markdown('<div class="center-container">', unsafe_allow_html=True)
 
 # 🔹 BIG CENTER IMAGE (BUILDING)
-st.markdown('<div class="image-wrapper">', unsafe_allow_html=True)
-
 st.image(
     "static/ust building.png",
-    width=520
+    width=900   
 )
 
-st.markdown('<div class="image-overlay">', unsafe_allow_html=True)
+
+# 🔹 TITLE TEXT 
+st.markdown('<div class="title">🧠 UST AI Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Ask anything and get an AI-powered answer</div>', unsafe_allow_html=True)
+
+# 🔹 SEARCH BAR 
 query = st.text_input(
-    "Search",
+    "",
     placeholder="Hey! How may I assist you today?",
     key="search",
     label_visibility="collapsed"
 )
-st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# 🔹 TITLE TEXT (unchanged)
-st.markdown('<div class="title">🧠 UST AI Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Ask anything and get an AI-powered answer</div>', unsafe_allow_html=True)
-
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -89,7 +84,7 @@ if query:
 st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
 st.image(
     "static/background.png",
-    width="stretch"
+    width="1000"
 )
 
 
