@@ -12,6 +12,7 @@ from typing import List, Any
 
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
@@ -111,69 +112,12 @@ class VectorStore:
         )
 
         print(f"Added {len(documents)} documents to vector store")
-
 # ============================
 # Data Ingestion
 # ============================
 DATA_DIR = "data"
 
 def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
-    documents: List[Document] = []
-
-    # ---- Load PDFs ----
-    if os.path.exists(DATA_DIR):
-        for file in os.listdir(DATA_DIR):
-            if file.lower().endswith(".pdf"):
-                loader = PyMuPDFLoader(os.path.join(DATA_DIR, file))
-                loaded = loader.load()
-                print(f"Loaded {len(loaded)} pages from {file}")
-                documents.extend(loaded)
-
-    # ---- Manual document (GUARANTEED non-empty) ----
-    manual_doc = Document(
-        page_content=(
-            "Author: Animesh\n"
-            "Source: example.txt\n"
-            "Date: 2026-01-16\n\n"
-            "This document describes the main page content "
-            "used to create a Retrieval-Augmented Generation system."
-        ),
-        metadata={
-            "source": "example.txt",
-            "page": 1,
-            "author": "Animesh",
-        },
-    )
-
-    documents.append(manual_doc)
-
-    # ---- HARD CHECK 1 ----
-    if not documents:
-        raise RuntimeError("No documents loaded at ingestion stage")
-
-    # ---- Split ----
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100,
-    )
-    chunks = splitter.split_documents(documents)
-
-    # ---- HARD CHECK 2 (THIS PREVENTS YOUR ERROR) ----
-    if not chunks:
-        raise RuntimeError("Text splitter produced ZERO chunks")
-
-    print(f"Total chunks created: {len(chunks)}")
-
-    # ---- Embed ----
-    embeddings = embedder.embed_documents(chunks)
-
-    # ---- HARD CHECK 3 ----
-    if embeddings is None or len(embeddings) == 0:
-        raise RuntimeError("Embedding generation returned EMPTY output")
-
-    # ---- Store ----
-    vector_store.add_documents(chunks, embeddings)
-
     documents: List[Document] = []
 
     # ---- 1️⃣ Load PDFs ----
@@ -211,6 +155,7 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     embeddings = embedder.embed_documents(chunks)
 
     # ---- 5️⃣ Store ----
+    vector_store.add_documents(chunks, embeddings)
     vector_store.add_documents(chunks, embeddings)
 
 # ============================
