@@ -164,6 +164,11 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
         )
 
     print("TOTAL CLEANED DOCUMENTS:", len(cleaned_documents))
+    print("INGESTED DOCUMENT PREVIEW:")
+for d in cleaned_documents:
+    print("----")
+    print(d.page_content[:500])
+
 
     # ---- Chunking ----
     splitter = RecursiveCharacterTextSplitter(
@@ -231,23 +236,19 @@ rag_retriever = RAGRetriever(vector_store, embedding_manager)
 def rag_advanced(query: str) -> str:
     results = rag_retriever.retrieve(query, top_k=5)
 
-    print("QUERY:", query)
-    print("RETRIEVED COUNT:", len(results))
-
+    print("RETRIEVED CHUNKS COUNT:", len(results))
     for i, r in enumerate(results):
-        print(f"\n--- RESULT {i+1} ---")
-        print("SOURCE:", r.get("source"))
-        print("PAGE:", r.get("page"))
-        print("CONTENT PREVIEW:", r["content"][:300])
+        print(f"\n--- CHUNK {i+1} ---")
+        print(r["content"][:500])
 
     if not results:
-        return "RETRIEVAL RETURNED ZERO CHUNKS — VECTOR SEARCH FAILED"
+        return "NO DOCUMENTS RETRIEVED"
 
     context = "\n\n".join(r["content"] for r in results)
 
     prompt = f"""
-Answer using ONLY the context below.
-If not found, say you don't know.
+Answer the question using ONLY the context below.
+If the answer is not in the context, say you don't know.
 
 Context:
 {context}
