@@ -153,7 +153,7 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
         text = doc.page_content.replace("\n", " ").replace("\t", " ")
         text = f"Document Name: {source}\n{text}"
 
-        if len(text.strip()) < 50:
+        if len(text.strip()) < 10:
             continue
 
         cleaned_documents.append(
