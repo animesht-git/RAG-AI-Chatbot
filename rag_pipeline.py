@@ -106,27 +106,28 @@ class VectorStore:
 
         print(f"Added {len(documents)} documents to vector store")
 #Ingestion Pipeline
-DATA_DIR = "data"
+DATA_DIR = "data/pdf"
 
 def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     documents: List[Document] = []
 
     # ---- Load PDFs + Word files ----
     if os.path.exists(DATA_DIR):
-        for file in os.listdir(DATA_DIR):
-            file_path = os.path.join(DATA_DIR, file)
+        for root, _, files in os.walk(DATA_DIR):
+            for file in files:
+                file_path = os.path.join(root, file)
 
-            if file.lower().endswith(".pdf"):
-                loader = PyMuPDFLoader(file_path)
-                docs = loader.load()
-                documents.extend(docs)
-                print(f"Loaded {len(docs)} pages from PDF: {file}")
+                if file.lower().endswith(".pdf"):
+                    loader = PyMuPDFLoader(file_path)
+                    docs = loader.load()
+                    documents.extend(docs)
+                    print(f"Loaded {len(docs)} pages from PDF: {file}")
 
-            elif file.lower().endswith(".docx"):
-                loader = Docx2txtLoader(file_path)
-                docs = loader.load()
-                documents.extend(docs)
-                print(f"Loaded Word document: {file}")
+                elif file.lower().endswith(".docx"):
+                    loader = Docx2txtLoader(file_path)
+                    docs = loader.load()
+                    documents.extend(docs)
+                    print(f"Loaded Word document: {file}")
 
     # ---- Manual Documents (optional fallback) ----
     documents.append(
