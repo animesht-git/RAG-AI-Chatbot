@@ -1,6 +1,3 @@
-# ============================
-# Imports
-# ============================
 import os
 import uuid
 import requests
@@ -18,9 +15,7 @@ from langchain_community.document_loaders import Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# ============================
-# Load GROQ API Key (Streamlit + local)
-# ============================
+
 try:
     import streamlit as st
     GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
@@ -30,9 +25,7 @@ except Exception:
 if not GROQ_API_KEY:
     raise RuntimeError("GROQ_API_KEY not found")
 
-# ============================
-# LLM (Groq via HTTP)
-# ============================
+
 def llm(prompt: str) -> str:
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -50,9 +43,6 @@ def llm(prompt: str) -> str:
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
-# ============================
-# Embedding Manager
-# ============================
 class EmbeddingManager:
     def __init__(self):
         self.model = HuggingFaceEmbeddings(
@@ -66,8 +56,8 @@ class EmbeddingManager:
     def embed_query(self, query: str) -> np.ndarray:
         return np.array(self.model.embed_query(query))
 
-# ============================
-# Vector Store (YOUR implementation)
+
+# Vector Store 
 class VectorStore:
     def __init__(
         self,
@@ -114,22 +104,31 @@ class VectorStore:
         )
 
         print(f"Added {len(documents)} documents to vector store")
-# ============================
-# Data Ingestion
-# ============================
+#Ingestion Pipeline
 DATA_DIR = "data"
 
 def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     documents: List[Document] = []
 
-    # ---- 1️⃣ Load PDFs ----
-    if os.path.exists(DATA_DIR):
-        for file in os.listdir(DATA_DIR):
-            if file.lower().endswith(".pdf"):
-                loader = PyMuPDFLoader(os.path.join(DATA_DIR, file))
-                documents.extend(loader.load())
+    # ---- Load PDFs + Word files ----
+if os.path.exists(DATA_DIR):
+    for file in os.listdir(DATA_DIR):
+        file_path = os.path.join(DATA_DIR, file)
 
-    # ---- 2️⃣ Manual Documents ----
+        if file.lower().endswith(".pdf"):
+            loader = PyMuPDFLoader(file_path)
+            docs = loader.load()
+            documents.extend(docs)
+            print(f"Loaded {len(docs)} pages from PDF: {file}")
+
+        elif file.lower().endswith(".docx"):
+            loader = Docx2txtLoader(file_path)
+            docs = loader.load()
+            documents.extend(docs)
+            print(f"Loaded Word document: {file}")
+
+
+    # ---- Manual Documents ----
     manual_docs = [
         Document(
             page_content="main page content i will be using to create RAG",
@@ -145,24 +144,48 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
 
     if not documents:
         raise RuntimeError("No documents found for ingestion")
+# ---- Normalization + inject document identity ----
+cleaned_documents = []
 
-    # ---- 3️⃣ Chunking ----
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100,
+for doc in documents:
+    source = doc.metadata.get("source", "unknown")
+
+    text = doc.page_content
+    text = (
+        text.replace("\t", " ")
+            .replace("|", " ")
+            .replace("\n", " ")
+            .replace("  ", " ")
     )
-    chunks = splitter.split_documents(documents)
 
-    # ---- 4️⃣ Embeddings ----
-    embeddings = embedder.embed_documents(chunks)
+    text = f"Document Name: {source}\n{text}"
 
-    # ---- 5️⃣ Store ----
-    vector_store.add_documents(chunks, embeddings)
-    vector_store.add_documents(chunks, embeddings)
+    if len(text.strip()) < 50:
+        continue
 
-# ============================
-# Retriever
-# ============================
+    cleaned_documents.append(
+        Document(
+            page_content=text,
+            metadata=doc.metadata
+        )
+    )
+
+documents = cleaned_documents
+print("TOTAL CLEANED DOCUMENTS:", len(documents))
+
+# ----Chunking ----
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=800,
+    chunk_overlap=100,
+)
+chunks = splitter.split_documents(documents)
+
+# ----Embeddings ----
+embeddings = embedder.embed_documents(chunks)
+
+# ----  Store ----
+vector_store.add_documents(chunks, embeddings)
+
 class RAGRetriever:
     def __init__(self, vector_store: VectorStore, embedder: EmbeddingManager):
         self.collection = vector_store.collection
@@ -189,9 +212,7 @@ class RAGRetriever:
 
         return retrieved
 
-# ============================
-# Wire Everything (ONCE)
-# ============================
+
 @st.cache_resource
 def get_embedding_manager():
     return EmbeddingManager()
@@ -211,9 +232,7 @@ if vector_store.collection.count() == 0:
 
 rag_retriever = RAGRetriever(vector_store, embedding_manager)
 
-# ============================
-# RAG Function (USED BY APP)
-# ============================
+
 def rag_advanced(query: str) -> str:
     results = rag_retriever.retrieve(query)
 
