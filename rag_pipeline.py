@@ -111,17 +111,17 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     documents: List[Document] = []
 
     # ---- Load PDFs + Word files ----
-if os.path.exists(DATA_DIR):
-    for file in os.listdir(DATA_DIR):
-        file_path = os.path.join(DATA_DIR, file)
+    if os.path.exists(DATA_DIR):
+        for file in os.listdir(DATA_DIR):
+          file_path = os.path.join(DATA_DIR, file)
 
-        if file.lower().endswith(".pdf"):
+          if file.lower().endswith(".pdf"):
             loader = PyMuPDFLoader(file_path)
             docs = loader.load()
             documents.extend(docs)
             print(f"Loaded {len(docs)} pages from PDF: {file}")
 
-        elif file.lower().endswith(".docx"):
+          elif file.lower().endswith(".docx"):
             loader = Docx2txtLoader(file_path)
             docs = loader.load()
             documents.extend(docs)
@@ -145,46 +145,46 @@ if os.path.exists(DATA_DIR):
     if not documents:
         raise RuntimeError("No documents found for ingestion")
 # ---- Normalization + inject document identity ----
-cleaned_documents = []
+    cleaned_documents = []
 
-for doc in documents:
-    source = doc.metadata.get("source", "unknown")
+    for doc in documents:
+        source = doc.metadata.get("source", "unknown")
 
-    text = doc.page_content
-    text = (
-        text.replace("\t", " ")
+        text = doc.page_content
+        text = (
+          text.replace("\t", " ")
             .replace("|", " ")
             .replace("\n", " ")
             .replace("  ", " ")
     )
 
-    text = f"Document Name: {source}\n{text}"
+        text = f"Document Name: {source}\n{text}"
 
-    if len(text.strip()) < 50:
-        continue
+        if len(text.strip()) < 50:
+         continue
 
-    cleaned_documents.append(
-        Document(
+        cleaned_documents.append(
+          Document(
             page_content=text,
             metadata=doc.metadata
         )
     )
 
-documents = cleaned_documents
-print("TOTAL CLEANED DOCUMENTS:", len(documents))
+    documents = cleaned_documents
+    print("TOTAL CLEANED DOCUMENTS:", len(documents))
 
 # ----Chunking ----
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=800,
-    chunk_overlap=100,
+    splitter = RecursiveCharacterTextSplitter(
+      chunk_size=800,
+      chunk_overlap=100,
 )
-chunks = splitter.split_documents(documents)
+    chunks = splitter.split_documents(documents)
 
 # ----Embeddings ----
-embeddings = embedder.embed_documents(chunks)
+    embeddings = embedder.embed_documents(chunks)
 
 # ----  Store ----
-vector_store.add_documents(chunks, embeddings)
+    vector_store.add_documents(chunks, embeddings)
 
 class RAGRetriever:
     def __init__(self, vector_store: VectorStore, embedder: EmbeddingManager):
