@@ -113,23 +113,22 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
 
     # ---- Load PDFs + Word files ----
     if os.path.exists(DATA_DIR):
-        for root, _, files in os.walk(DATA_DIR):
-            for file in files:
-                file_path = os.path.join(root, file)
+        for file in os.listdir(DATA_DIR):
+            file_path = os.path.join(DATA_DIR, file)
 
-                if file.lower().endswith(".pdf"):
-                    loader = PyMuPDFLoader(file_path)
-                    docs = loader.load()
-                    documents.extend(docs)
-                    print(f"Loaded {len(docs)} pages from PDF: {file}")
+            if file.lower().endswith(".pdf"):
+                loader = PyMuPDFLoader(file_path)
+                docs = loader.load()
+                documents.extend(docs)
+                print(f"Loaded {len(docs)} pages from PDF: {file}")
 
-                elif file.lower().endswith(".docx"):
-                    loader = Docx2txtLoader(file_path)
-                    docs = loader.load()
-                    documents.extend(docs)
-                    print(f"Loaded Word document: {file}")
+            elif file.lower().endswith(".docx"):
+                loader = Docx2txtLoader(file_path)
+                docs = loader.load()
+                documents.extend(docs)
+                print(f"Loaded Word document: {file}")
 
-    # ---- Manual Documents (optional fallback) ----
+    # ---- Manual fallback document ----
     documents.append(
         Document(
             page_content="main page content i will be using to create RAG",
@@ -145,12 +144,13 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     if not documents:
         raise RuntimeError("No documents found for ingestion")
 
-    # ---- Clean + Normalize ----
-    cleaned_documents = []
+    # ---- Clean + normalize ----
+    cleaned_documents: List[Document] = []
+
     for doc in documents:
+        text = doc.page_content.replace("\n", " ").replace("\t", " ")
         source = doc.metadata.get("source", "unknown")
 
-        text = doc.page_content.replace("\n", " ").replace("\t", " ")
         text = f"Document Name: {source}\n{text}"
 
         if len(text.strip()) < 10:
@@ -159,16 +159,11 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
         cleaned_documents.append(
             Document(
                 page_content=text,
-                metadata=doc.metadata
+                metadata=doc.metadata,
             )
         )
 
     print("TOTAL CLEANED DOCUMENTS:", len(cleaned_documents))
-    print("INGESTED DOCUMENT PREVIEW:")
-for d in cleaned_documents:
-    print("----")
-    print(d.page_content[:500])
-
 
     # ---- Chunking ----
     splitter = RecursiveCharacterTextSplitter(
@@ -184,6 +179,7 @@ for d in cleaned_documents:
 
     # ---- Store ----
     vector_store.add_documents(chunks, embeddings)
+
 
 
 class RAGRetriever:
