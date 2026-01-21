@@ -65,8 +65,9 @@ class VectorStore:
     ):
         self.collection_name = collection_name
         self.persist_directory = os.path.join(
-            tempfile.gettempdir(), "vector_store"
-        )
+    os.getcwd(), "vector_store"
+)
+
         self.client = None
         self.collection = None
         self._initialize_store()
@@ -113,23 +114,22 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
     # ---- Load PDFs + Word files ----
     if os.path.exists(DATA_DIR):
         for file in os.listdir(DATA_DIR):
-          file_path = os.path.join(DATA_DIR, file)
+            file_path = os.path.join(DATA_DIR, file)
 
-          if file.lower().endswith(".pdf"):
-            loader = PyMuPDFLoader(file_path)
-            docs = loader.load()
-            documents.extend(docs)
-            print(f"Loaded {len(docs)} pages from PDF: {file}")
+            if file.lower().endswith(".pdf"):
+                loader = PyMuPDFLoader(file_path)
+                docs = loader.load()
+                documents.extend(docs)
+                print(f"Loaded {len(docs)} pages from PDF: {file}")
 
-          elif file.lower().endswith(".docx"):
-            loader = Docx2txtLoader(file_path)
-            docs = loader.load()
-            documents.extend(docs)
-            print(f"Loaded Word document: {file}")
+            elif file.lower().endswith(".docx"):
+                loader = Docx2txtLoader(file_path)
+                docs = loader.load()
+                documents.extend(docs)
+                print(f"Loaded Word document: {file}")
 
-
-    # ---- Manual Documents ----
-    manual_docs = [
+    # ---- Manual Documents (optional fallback) ----
+    documents.append(
         Document(
             page_content="main page content i will be using to create RAG",
             metadata={
@@ -139,52 +139,46 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
                 "date_created": "2026-01-16",
             },
         )
-    ]
-    documents.extend(manual_docs)
+    )
 
     if not documents:
         raise RuntimeError("No documents found for ingestion")
-# ---- Normalization + inject document identity ----
-    cleaned_documents = []
 
+    # ---- Clean + Normalize ----
+    cleaned_documents = []
     for doc in documents:
         source = doc.metadata.get("source", "unknown")
 
-        text = doc.page_content
-        text = (
-          text.replace("\t", " ")
-            .replace("|", " ")
-            .replace("\n", " ")
-            .replace("  ", " ")
-    )
-
+        text = doc.page_content.replace("\n", " ").replace("\t", " ")
         text = f"Document Name: {source}\n{text}"
 
         if len(text.strip()) < 50:
-         continue
+            continue
 
         cleaned_documents.append(
-          Document(
-            page_content=text,
-            metadata=doc.metadata
+            Document(
+                page_content=text,
+                metadata=doc.metadata
+            )
         )
-    )
 
-    documents = cleaned_documents
-    print("TOTAL CLEANED DOCUMENTS:", len(documents))
+    print("TOTAL CLEANED DOCUMENTS:", len(cleaned_documents))
 
-# ----Chunking ----
+    # ---- Chunking ----
     splitter = RecursiveCharacterTextSplitter(
-      chunk_size=800,
-      chunk_overlap=100,
-)
-    chunks = splitter.split_documents(documents)
+        chunk_size=800,
+        chunk_overlap=100,
+    )
+    chunks = splitter.split_documents(cleaned_documents)
 
-# ----Embeddings ----
+    print("TOTAL CHUNKS:", len(chunks))
+
+    # ---- Embeddings ----
     embeddings = embedder.embed_documents(chunks)
 
-# ----  Store ----
+    # ---- Store ----
     vector_store.add_documents(chunks, embeddings)
+
 
 class RAGRetriever:
     def __init__(self, vector_store: VectorStore, embedder: EmbeddingManager):
