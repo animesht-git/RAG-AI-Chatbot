@@ -7,6 +7,8 @@ import requests
 import numpy as np
 import chromadb
 import tempfile
+import streamlit as st
+
 
 from typing import List, Any
 
@@ -190,8 +192,17 @@ class RAGRetriever:
 # ============================
 # Wire Everything (ONCE)
 # ============================
-embedding_manager = EmbeddingManager()
-vector_store = VectorStore()
+@st.cache_resource
+def get_embedding_manager():
+    return EmbeddingManager()
+
+embedding_manager = get_embedding_manager()
+
+@st.cache_resource
+def get_vector_store():
+    return VectorStore()
+
+vector_store = get_vector_store()
 print("VECTOR STORE COUNT:", vector_store.collection.count())
 
 
