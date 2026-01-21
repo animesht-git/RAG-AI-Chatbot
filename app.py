@@ -3,45 +3,83 @@ from rag_pipeline import rag_advanced
 
 st.set_page_config(
     page_title="RAG AI Chatbot",
-    layout="wide"
+    page_icon="🚀",
+    layout="centered"
 )
 
-# ---------- SMALL TOP GAP ----------
-st.markdown("<br>", unsafe_allow_html=True)
+# --- CSS ---
+st.markdown(
+    """
+    <style>
+    .center-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        margin-top: 40px;
+    }
 
-# ---------- CENTER IMAGE (BUILDING) ----------
-col_left, col_center, col_right = st.columns([3, 4, 3])
+    .title {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
 
-with col_center:
-    st.image(
-        "static/ust building.png",
-        use_container_width=True
-    )
+    .subtitle {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 20px;
+    }
 
-# ---------- VERY SMALL GAP ----------
-st.markdown("<br>", unsafe_allow_html=True)
+    .search-box {
+        width: 100%;
+        max-width: 600px;
+    }
 
-# ---------- SEARCH BAR ----------
-q_left, q_center, q_right = st.columns([3, 6, 3])
+    .bottom-bg {
+        margin-top: 80px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-with q_center:
-    query = st.text_input(
-        "",
-        placeholder="Ask anything from your documents (Training Calendar, Manuals, PDFs...)",
-        label_visibility="collapsed"
-    )
+# --- CENTER CONTENT ---
+st.markdown('<div class="center-container">', unsafe_allow_html=True)
 
-# ---------- ANSWER ----------
-if query:
-    with st.spinner("Searching documents..."):
-        answer = rag_advanced(query)
-        st.markdown("### Answer")
-        st.write(answer)
-
-# ---------- BOTTOM BACKGROUND IMAGE ----------
-st.markdown("<br><br>", unsafe_allow_html=True)
-
+# 🔹 BIG CENTER IMAGE (BUILDING)
 st.image(
-    "static/background.jpg",
+    "static/ust building.png",
     use_container_width=True
 )
+
+# 🔹 TITLE TEXT (UNCHANGED)
+st.markdown('<div class="title">🧠 UST AI Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Ask anything and get an AI-powered answer</div>', unsafe_allow_html=True)
+
+# 🔹 SEARCH BAR (MOVED HIGHER)
+query = st.text_input(
+    "",
+    placeholder="Hey! How may I assist you today?",
+    key="search",
+    label_visibility="collapsed"
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- ANSWER SECTION ---
+if query:
+    with st.spinner("Cooking..."):
+        answer = rag_advanced(query)
+
+    st.markdown("---")
+    st.markdown("### 📄 Answer")
+    st.write(answer)
+
+# --- BOTTOM BACKGROUND IMAGE (2/3 PAGE FEEL) ---
+st.markdown('<div class="bottom-bg">', unsafe_allow_html=True)
+st.image(
+    "static/background.png",
+    use_container_width=True
+)
+st.markdown('</div>', unsafe_allow_html=True)
