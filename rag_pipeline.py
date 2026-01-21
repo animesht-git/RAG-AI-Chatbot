@@ -125,10 +125,19 @@ def ingest_documents(vector_store: VectorStore, embedder: EmbeddingManager):
                 print(f"Loaded {len(docs)} pages from PDF: {file}")
 
             elif file.lower().endswith(".docx"):
-                loader = Docx2txtLoader(file_path)
-                docs = loader.load()
-                documents.extend(docs)
-                print(f"Loaded Word document: {file}")
+              try:
+               loader = Docx2txtLoader(file_path)
+               docs = loader.load()
+
+               if not docs or not docs[0].page_content.strip():
+                   print(f"⚠️ Skipped empty Word file: {file}")
+               else:
+                   documents.extend(docs)
+                   print(f"Loaded Word document: {file}")
+
+              except Exception as e:
+                 print(f"❌ Skipped invalid Word file {file}: {e}")
+
 
     # ---- Manual fallback document ----
     documents.append(
