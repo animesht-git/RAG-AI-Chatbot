@@ -8,12 +8,8 @@ faiss-cpu
 chromadb
 python-dotenv
 openai
-langchain-groq
 streamlit
-sentence-transformers
-chromadb
-langchain-groq>=1.1.1
-langchain
-pymupdf
-python-dotenv
+langchain>=0.1.16 
+groq==0.9.0
+pydantic<3
 scikit-learn
